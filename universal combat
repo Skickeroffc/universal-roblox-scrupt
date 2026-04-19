@@ -79,46 +79,54 @@ local hu, sa, va = 0, 1, 1
 local function u_c() f_col, s_v.ImageColor3 = Color3.fromHSV(hu, sa, va), Color3.fromHSV(hu, 1, 1) end
 h_b.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then local m = U.InputChanged:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseMovement then hu = 1 - math.clamp((ev.Position.Y - h_b.AbsolutePosition.Y) / h_b.AbsoluteSize.Y, 0, 1) u_c() end end) U.InputEnded:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseButton1 then m:Disconnect() end end) end end)
 s_v.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then local m = U.InputChanged:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseMovement then sa = math.clamp((ev.Position.X - s_v.AbsolutePosition.X) / s_v.AbsoluteSize.X, 0, 1) va = 1 - math.clamp((ev.Position.Y - s_v.AbsolutePosition.Y) / s_v.AbsoluteSize.Y, 0, 1) u_c() end end) U.InputEnded:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseButton1 then m:Disconnect() end end) end end)
+u_c()
 c_tog(pg_o, "INF JUMP", function(s) i_j = s end)
-c_tog(pg_o, "CTRL DELETE", function(s) c_del = s end)
-c_tog(pg_o, "UNLOAD", function() f_draw:Destroy() sg:Destroy() end)
+c_tog(pg_o, "DELETE (C_DEL)", function(s) c_del = s end)
+c_tog(pg_o, "UNLOAD", function() sg:Destroy() f_draw:Remove() end)
+local function is_vis(p)
+local char = p.Character
+if not char then return false end
+local head = char:FindFirstChild("Head")
+if not head then return false end
+local params = RaycastParams.new()
+params.FilterType = Enum.RaycastFilterType.Blacklist
+params.FilterDescendantsInstances = {lp.Character, cam}
+local res = workspace:Raycast(cam.CFrame.Position, (head.Position - cam.CFrame.Position).unit * 500, params)
+return (not res) or res.Instance:IsDescendantOf(char)
+end
+U.JumpRequest:Connect(function() if i_j then lp.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 R.RenderStepped:Connect(function()
-if not sg.Parent then f_draw.Visible = false return end
-f_draw.Visible, f_draw.Radius, f_draw.Position, f_draw.Color = f_on and m_vis, f_rad, U:GetMouseLocation(), r_fov and Color3.fromHSV(tick()%5/5, 1, 1) or f_col
-for _, p in pairs(P:GetPlayers()) do
-if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-local r, char = p.Character.HumanoidRootPart, p.Character
-local c_p = (p.TeamColor and p.TeamColor.Color) or Color3.new(1,1,1)
-if e_on and not (a_t_ch and p.Team == lp.Team) then
-local h = char:FindFirstChild("E_H") or Instance.new("Highlight", char)
-h.Name, h.Enabled, h.FillColor, h.FillTransparency = "E_H", e_hi, c_p, 0.5
-local tag = sg:FindFirstChild(p.Name .. "_E") or Instance.new("BillboardGui", sg)
-tag.Name, tag.Adornee, tag.Size, tag.StudsOffset, tag.AlwaysOnTop = p.Name .. "_E", r, UDim2.new(0,100,0,50), Vector3.new(0,3,0), true
-local lb = tag:FindFirstChild("L") or Instance.new("TextLabel", tag)
-lb.Name, lb.Size, lb.BackgroundTransparency, lb.Text, lb.TextColor3, lb.Visible, lb.Font, lb.TextSize = "L", UDim2.new(1,0,1,0), 1, p.Name, c_p, e_nm, Enum.Font.GothamBold, 14
-else
-if sg:FindFirstChild(p.Name .. "_E") then sg[p.Name .. "_E"]:Destroy() end
-if char:FindFirstChild("E_H") then char.E_H.Enabled = false end
-end
-end
-end
+f_draw.Visible = f_on
+f_draw.Position = Vector2.new(mouse.X, mouse.Y + 36)
+f_draw.Radius = f_rad
+f_draw.Color = r_fov and Color3.fromHSV(tick() % 5 / 5, 1, 1) or f_col
 if a_on and U:IsKeyDown(a_key) then
-local n, sd = nil, f_rad
+local target, min_dist = nil, f_rad
 for _, p in pairs(P:GetPlayers()) do
-if p ~= lp and p.Character and p.Character:FindFirstChild("Head") and p.Character.Humanoid.Health > 0 then
-if not (a_t_ch and p.Team == lp.Team) then
-local ps, vs = cam:WorldToViewportPoint(p.Character.Head.Position)
-if vs then local mg = (Vector2.new(ps.X, ps.Y) - U:GetMouseLocation()).Magnitude if mg < sd then sd, n = mg, p.Character.Head end end
+if p ~= lp and p.Character and p.Character:FindFirstChild("Head") then
+if a_t_ch and p.Team == lp.Team then continue end
+local pos, on_s = cam:WorldToViewportPoint(p.Character.Head.Position)
+if on_s then
+local dist = (Vector2.new(mouse.X, mouse.Y + 36) - Vector2.new(pos.X, pos.Y)).Magnitude
+if dist < min_dist and is_vis(p) then
+target = p
+min_dist = dist
 end
 end
 end
-if n then cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, n.Position), 1/a_sm) end
+end
+if target then
+local t_pos = cam:WorldToViewportPoint(target.Character.Head.Position)
+mousemoverel((t_pos.X - mouse.X) / a_sm, (t_pos.Y - mouse.Y) / a_sm)
+end
 end
 end)
-U.InputBegan:Connect(function(i, g)
-if g then return end
-if is_b then a_key, is_b, a_bn.Text = i.KeyCode, false, "AIM BIND: [" .. i.KeyCode.Name .. "]"
-elseif i.KeyCode == B_KEY then m_vis = not m_vis mf.Visible = m_vis
-elseif i.KeyCode == Enum.KeyCode.Space and i_j and lp.Character then lp.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end
+U.InputBegan:Connect(function(i)
+if is_b and i.UserInputType == Enum.UserInputType.Keyboard then
+a_key = i.KeyCode
+is_b, a_bn.Text = false, "AIM BIND: [" .. a_key.Name .. "]"
+elseif i.KeyCode == B_KEY then
+m_vis = not m_vis
+mf.Visible = m_vis
+end
 end)
-mouse.Button1Down:Connect(function() if c_del and U:IsKeyDown(Enum.KeyCode.LeftControl) and mouse.Target then mouse.Target:Destroy() end end)
