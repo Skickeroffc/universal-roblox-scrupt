@@ -1,0 +1,124 @@
+local P,U,R = game:GetService("Players"),game:GetService("UserInputService"),game:GetService("RunService")
+local lp = P.LocalPlayer
+local cam, mouse = workspace.CurrentCamera, lp:GetMouse()
+local a_on, a_sm, a_key, a_t_ch = false, 12, Enum.KeyCode.E, false
+local e_on, e_nm, e_hi = false, false, false
+local f_on, f_rad, f_col = true, 100, Color3.fromRGB(120, 0, 255)
+local r_fov, is_b, c_del, i_j = false, false, false, false
+local m_vis, B_KEY = true, Enum.KeyCode.Semicolon
+local f_draw = Drawing.new("Circle")
+f_draw.Thickness, f_draw.Filled, f_draw.Transparency = 1, false, 1
+local parent = (gethui and gethui()) or game:GetService("CoreGui") or lp:WaitForChild("PlayerGui")
+local sg = Instance.new("ScreenGui", parent)
+sg.Name, sg.ResetOnSpawn = tostring(math.random(1e6, 9e6)), false
+local mf = Instance.new("Frame", sg)
+mf.Size, mf.Position, mf.BackgroundColor3, mf.BorderSizePixel = UDim2.new(0, 350, 0, 520), UDim2.new(0.5, -175, 0.5, -260), Color3.new(1, 1, 1), 0
+local grad = Instance.new("UIGradient", mf)
+grad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(0, 0, 0)),ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 0, 255)),ColorSequenceKeypoint.new(1, Color3.new(0, 0, 0))})
+grad.Rotation = 90
+Instance.new("UIStroke", mf).Color = Color3.fromRGB(150, 50, 255)
+Instance.new("UICorner", mf).CornerRadius = UDim.new(0, 15)
+local hd = Instance.new("Frame", mf)
+hd.Size, hd.BackgroundTransparency = UDim2.new(1, 0, 0, 50), 1
+local tl = Instance.new("TextLabel", hd)
+tl.Size, tl.Text, tl.TextColor3, tl.Font, tl.TextSize, tl.BackgroundTransparency = UDim2.new(1, 0, 1, 0), "SKICKER UNIVERSAL", Color3.new(1, 1, 1), Enum.Font.GothamBold, 20, 1
+local drag, d_st, s_pos
+hd.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag, d_st, s_pos = true, i.Position, mf.Position end end)
+U.InputChanged:Connect(function(i) if drag and i.UserInputType == Enum.UserInputType.MouseMovement then local d = i.Position - d_st mf.Position = UDim2.new(s_pos.X.Scale, s_pos.X.Offset + d.X, s_pos.Y.Scale, s_pos.Y.Offset + d.Y) end end)
+U.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end end)
+local nv = Instance.new("Frame", mf)
+nv.Size, nv.Position, nv.BackgroundTransparency, nv.BackgroundColor3 = UDim2.new(0.9, 0, 0, 35), UDim2.new(0.05, 0, 0, 55), 0.6, Color3.new(0, 0, 0)
+Instance.new("UICorner", nv)
+local function c_tab(txt, pos)
+local b = Instance.new("TextButton", nv)
+b.Size, b.Position, b.Text, b.TextColor3, b.BackgroundTransparency, b.Font, b.TextSize = UDim2.new(0.33, 0, 1, 0), pos, txt, Color3.fromRGB(180,180,180), 1, Enum.Font.GothamBold, 11
+return b
+end
+local bt_c, bt_v, bt_o = c_tab("COMBAT", UDim2.new(0,0,0,0)), c_tab("VISUALS", UDim2.new(0.33,0,0,0)), c_tab("OTHER", UDim2.new(0.66,0,0,0))
+bt_c.TextColor3 = Color3.new(1,1,1)
+local pg_c, pg_v, pg_o = Instance.new("ScrollingFrame", mf), Instance.new("ScrollingFrame", mf), Instance.new("ScrollingFrame", mf)
+local pgs = {pg_c, pg_v, pg_o}
+for _, p in pairs(pgs) do p.Size, p.Position, p.BackgroundTransparency, p.ScrollBarThickness, p.Visible = UDim2.new(1, -30, 1, -120), UDim2.new(0, 15, 0, 105), 1, 0, false Instance.new("UIListLayout", p).Padding = UDim.new(0, 10) end
+pg_c.Visible = true
+local function sw(p, b) for _, v in pairs(pgs) do v.Visible = false end bt_c.TextColor3, bt_v.TextColor3, bt_o.TextColor3 = Color3.fromRGB(180,180,180), Color3.fromRGB(180,180,180), Color3.fromRGB(180,180,180) p.Visible, b.TextColor3 = true, Color3.new(1,1,1) end
+bt_c.MouseButton1Click:Connect(function() sw(pg_c, bt_c) end)
+bt_v.MouseButton1Click:Connect(function() sw(pg_v, bt_v) end)
+bt_o.MouseButton1Click:Connect(function() sw(pg_o, bt_o) end)
+local function c_tog(p, t, clb)
+local a, b = false, Instance.new("TextButton", p)
+b.Size, b.BackgroundColor3, b.BackgroundTransparency, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(1, 0, 0, 40), Color3.new(1, 1, 1), 0.92, t .. ": OFF", Color3.new(1, 1, 1), Enum.Font.GothamBold, 14
+Instance.new("UICorner", b)
+b.MouseButton1Click:Connect(function() a = not a clb(a) b.Text = t .. (t == "UNLOAD" and "" or ": " .. (a and "ON" or "OFF")) end)
+return b
+end
+local function c_sld(p, t, mn, mx, df, clb)
+local f = Instance.new("Frame", p) f.Size, f.BackgroundTransparency = UDim2.new(1, 0, 0, 50), 1
+local l = Instance.new("TextLabel", f) l.Size, l.Text, l.TextColor3, l.BackgroundTransparency, l.Font, l.TextSize = UDim2.new(1, 0, 0, 20), t .. ": " .. df, Color3.new(1,1,1), 1, Enum.Font.GothamBold, 12
+local b = Instance.new("Frame", f) b.Size, b.Position, b.BackgroundColor3, b.BackgroundTransparency = UDim2.new(1, -10, 0, 6), UDim2.new(0, 5, 0.7, 0), Color3.new(0,0,0), 0.5 Instance.new("UICorner", b)
+local fi = Instance.new("Frame", b) fi.Size, fi.BackgroundColor3 = UDim2.new((df-mn)/(mx-mn), 0, 1, 0), Color3.fromRGB(255, 255, 255) Instance.new("UICorner", fi)
+b.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then local m_c = U.InputChanged:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseMovement then local rl = math.clamp((ev.Position.X - b.AbsolutePosition.X) / b.AbsoluteSize.X, 0, 1) fi.Size, l.Text = UDim2.new(rl, 0, 1, 0), t .. ": " .. math.floor(mn + (rl * (mx - mn))) clb(math.floor(mn + (rl * (mx - mn)))) end end) U.InputEnded:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseButton1 then m_c:Disconnect() end end) end end)
+end
+c_tog(pg_c, "AIMBOT", function(s) a_on = s end)
+c_sld(pg_c, "SMOOTH", 1, 30, 12, function(v) a_sm = v end)
+c_tog(pg_c, "TEAM CHECK", function(s) a_t_ch = s end)
+local a_bn = Instance.new("TextButton", pg_c)
+a_bn.Size, a_bn.BackgroundColor3, a_bn.BackgroundTransparency, a_bn.Text, a_bn.TextColor3, a_bn.Font = UDim2.new(1, 0, 0, 40), Color3.new(1,1,1), 0.92, "AIM BIND: [E]", Color3.new(1,1,1), Enum.Font.GothamBold
+Instance.new("UICorner", a_bn)
+a_bn.MouseButton1Click:Connect(function() is_b = true a_bn.Text = "..." end)
+c_tog(pg_v, "ESP MASTER", function(s) e_on = s end)
+c_tog(pg_v, "ESP NAMES", function(s) e_nm = s end)
+c_tog(pg_v, "ESP HIGHLIGHT", function(s) e_hi = s end)
+c_tog(pg_v, "SHOW FOV", function(s) f_on = s end)
+c_sld(pg_v, "FOV SIZE", 30, 500, 100, function(v) f_rad = v end)
+c_tog(pg_v, "RGB FOV", function(s) r_fov = s end)
+local p_f = Instance.new("Frame", pg_v) p_f.Size, p_f.BackgroundTransparency = UDim2.new(1, 0, 0, 100), 1
+local s_v = Instance.new("ImageLabel", p_f) s_v.Size, s_v.Position, s_v.Image = UDim2.new(0.75, 0, 1, 0), UDim2.new(0, 0, 0, 0), "rbxassetid://4155801252"
+local h_b = Instance.new("Frame", p_f) h_b.Size, h_b.Position = UDim2.new(0.15, 0, 1, 0), UDim2.new(0.85, 0, 0, 0)
+local h_g = Instance.new("UIGradient", h_b) h_g.Rotation, h_g.Color = 90, ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(1,0,0)), ColorSequenceKeypoint.new(0.16, Color3.new(1,1,0)), ColorSequenceKeypoint.new(0.33, Color3.new(0,1,0)), ColorSequenceKeypoint.new(0.5, Color3.new(0,1,1)), ColorSequenceKeypoint.new(0.66, Color3.new(0,0,1)), ColorSequenceKeypoint.new(0.83, Color3.new(1,0,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))})
+local hu, sa, va = 0, 1, 1
+local function u_c() f_col, s_v.ImageColor3 = Color3.fromHSV(hu, sa, va), Color3.fromHSV(hu, 1, 1) end
+h_b.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then local m = U.InputChanged:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseMovement then hu = 1 - math.clamp((ev.Position.Y - h_b.AbsolutePosition.Y) / h_b.AbsoluteSize.Y, 0, 1) u_c() end end) U.InputEnded:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseButton1 then m:Disconnect() end end) end end)
+s_v.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then local m = U.InputChanged:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseMovement then sa = math.clamp((ev.Position.X - s_v.AbsolutePosition.X) / s_v.AbsoluteSize.X, 0, 1) va = 1 - math.clamp((ev.Position.Y - s_v.AbsolutePosition.Y) / s_v.AbsoluteSize.Y, 0, 1) u_c() end end) U.InputEnded:Connect(function(ev) if ev.UserInputType == Enum.UserInputType.MouseButton1 then m:Disconnect() end end) end end)
+c_tog(pg_o, "INF JUMP", function(s) i_j = s end)
+c_tog(pg_o, "CTRL DELETE", function(s) c_del = s end)
+c_tog(pg_o, "UNLOAD", function() f_draw:Destroy() sg:Destroy() end)
+R.RenderStepped:Connect(function()
+if not sg.Parent then f_draw.Visible = false return end
+f_draw.Visible, f_draw.Radius, f_draw.Position, f_draw.Color = f_on and m_vis, f_rad, U:GetMouseLocation(), r_fov and Color3.fromHSV(tick()%5/5, 1, 1) or f_col
+for _, p in pairs(P:GetPlayers()) do
+if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+local r, char = p.Character.HumanoidRootPart, p.Character
+local c_p = (p.TeamColor and p.TeamColor.Color) or Color3.new(1,1,1)
+if e_on and not (a_t_ch and p.Team == lp.Team) then
+local h = char:FindFirstChild("E_H") or Instance.new("Highlight", char)
+h.Name, h.Enabled, h.FillColor, h.FillTransparency = "E_H", e_hi, c_p, 0.5
+local tag = sg:FindFirstChild(p.Name .. "_E") or Instance.new("BillboardGui", sg)
+tag.Name, tag.Adornee, tag.Size, tag.StudsOffset, tag.AlwaysOnTop = p.Name .. "_E", r, UDim2.new(0,100,0,50), Vector3.new(0,3,0), true
+local lb = tag:FindFirstChild("L") or Instance.new("TextLabel", tag)
+lb.Name, lb.Size, lb.BackgroundTransparency, lb.Text, lb.TextColor3, lb.Visible, lb.Font, lb.TextSize = "L", UDim2.new(1,0,1,0), 1, p.Name, c_p, e_nm, Enum.Font.GothamBold, 14
+else
+if sg:FindFirstChild(p.Name .. "_E") then sg[p.Name .. "_E"]:Destroy() end
+if char:FindFirstChild("E_H") then char.E_H.Enabled = false end
+end
+end
+end
+if a_on and U:IsKeyDown(a_key) then
+local n, sd = nil, f_rad
+for _, p in pairs(P:GetPlayers()) do
+if p ~= lp and p.Character and p.Character:FindFirstChild("Head") and p.Character.Humanoid.Health > 0 then
+if not (a_t_ch and p.Team == lp.Team) then
+local ps, vs = cam:WorldToViewportPoint(p.Character.Head.Position)
+if vs then local mg = (Vector2.new(ps.X, ps.Y) - U:GetMouseLocation()).Magnitude if mg < sd then sd, n = mg, p.Character.Head end end
+end
+end
+end
+if n then cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, n.Position), 1/a_sm) end
+end
+end)
+U.InputBegan:Connect(function(i, g)
+if g then return end
+if is_b then a_key, is_b, a_bn.Text = i.KeyCode, false, "AIM BIND: [" .. i.KeyCode.Name .. "]"
+elseif i.KeyCode == B_KEY then m_vis = not m_vis mf.Visible = m_vis
+elseif i.KeyCode == Enum.KeyCode.Space and i_j and lp.Character then lp.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end
+end)
+mouse.Button1Down:Connect(function() if c_del and U:IsKeyDown(Enum.KeyCode.LeftControl) and mouse.Target then mouse.Target:Destroy() end end)
